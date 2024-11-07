@@ -3,11 +3,130 @@ title: "Linear Models"
 output: html_document
 ---
 
+```{r, include = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
 ```{r setup}
 library(tidyverse)
 library(p8105.datasets)
-
-set.seed(1)
-
 ```
+
+Do some data cleaning. 
+
+```{r}
+data("nyc_airbnb")
+
+nyc_airbnb = 
+  nyc_airbnb |>
+  mutate(stars = review_scores_location / 2) |>
+  rename(
+    borough = neighbourhood_group, 
+    neighborhood = neighbourhood) |>
+  filter(
+    borough != "Staten Island") |>
+  select(price, stars, borough, neighborhood, room_type) |>
+  mutate(borough = fct_infreq(borough), 
+         room_type = fct_infreq(room_type)
+  )
+```
+
+
+## Fit some models 
+
+Start relatively simple. 
+
+```{r}
+fit = lm(price ~ stars, data = nyc_airbnb)
+
+summary(fit)
+
+names(summary(fit))
+
+coef(fit)
+
+broom::tidy(fit)
+
+
+fit |>
+  broom::tidy() |>
+  select(term, estimate, p.value)
+
+fit |>
+  broom::glance()
+```
+
+Try a bit more complex. 
+
+```{r}
+fit = 
+  lm(price ~ stars + borough, data = nyc_airbnb)
+
+fit |>
+  broom::tidy() |>
+  select(term, estimate, p.value) |>
+  mutate(
+    term = str_replace(term, "borough", "Borough: ")
+  ) |>
+  knitr::kable(digits = 3)
+```
+
+
+## Some diagnostics 
+
+(backtrack fo some EDA) 
+
+```{r}
+nyc_airbnb |>
+  ggplot(aes(x = stars, y = price)) + 
+  geom_point() + 
+  stat_smooth(method =)
+```
+
+
+Most diagnostics use residuals. 
+
+```{r}
+modelr::add_residuals(nyc_airbnb, fit) |>
+  ggplot(aes(x = borough, y = resid)) + 
+  geom_violin() +
+  ylim(-100, 100)
+```
+
+
+residuals against stars
+
+```{r}
+modelr::add_residuals(nyc_airbnb, fit) |>
+  ggplot(aes(x = stars, y = resid)) +
+  geom_point()
+```
+
+
+Residuals against fitted values 
+
+```{r}
+nyc_airbnb |> 
+  modelr::add_residuals(fit) |>
+  modelr::add_predictions(fit) 
+```
+
 
