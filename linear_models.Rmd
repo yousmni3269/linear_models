@@ -1,0 +1,13 @@
+---
+title: "Linear Models"
+output: html_document
+---
+
+```{r setup}
+library(tidyverse)
+library(p8105.datasets)
+
+set.seed(1)
+
+```
+
