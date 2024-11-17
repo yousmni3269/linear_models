@@ -117,17 +117,105 @@ sim_df_nonconstant |>
 ```{r}
 boot_straps = 
   tibble(
-    strap_number = 1:10
+    strap_number = 1:1000,
   ) |>
   mutate(
-    strap_sample = map(strap_number, \(i) boot_sample(df = sim_df_nonconstant)), 
-    models = map(strap_sample, \(df) lm(y ~ x, data = df))
+    strap_sample = map(strap_number, \(i) boot_sample(df = sim_df_constant)), 
+    models = map(strap_sample, \(df) lm(y ~ x, data = df)), 
+    results = map(models, broom::tidy)
+  )
+
+bootstrap_results = 
+  boot_straps |>
+  select(strap_number, results) |>
+  unnest(results) |>
+  group_by(term) |>
+  summarize(
+    boot_se = sd(estimate)
+  ) 
+
+bootstrap_results |>
+  knitr::kable(digits = 3)
+```
+
+
+## do this all using modelr
+
+```{r}
+boot_straps = 
+  sim_df_nonconstant |>
+  modelr::bootstrap(1000) |>
+  mutate(
+    strap = map(strap, as_tibble), 
+    models = map(strap, \(df) lm(y ~ x, data = df)), 
+    results = map(models, broom::tidy)
+  ) |>
+  select(.id, results) |>
+  unnest(results)
+```
+
+
+## What do you want to report 
+
+```{r}
+boot_straps |>
+  group_by(term) |>
+  summarize(
+    boot_est = mean(estimate),
+    boot_se = sd(estimate), 
+    boot_ci_ll = quantile(estimate, 0.025), 
+    coot_ci_ul = quantile(estimate, 0.975)
   )
 ```
 
 
+## Air BNB
+
+```{r}
+data("nyc_airbnb")
+
+manhattan_df = 
+  nyc_airbnb |>
+  mutate(stars = review_scores_location / 2) |>
+  rename(borough = neighbourhood_group, 
+         neighborhood = neighbourhood) |>
+  filter(borough == "Manhattan") |>
+  select(price, stars, room_type) |>
+  drop_na()
+```
 
 
+plot the data 
 
+
+```{r}
+manhattan_df |>
+  ggplot(aes(x = stars, y = price)) +
+  geom_point() + 
+  stat_smooth(method = "lm", se = FALSE)
+```
+
+fit a regression 
+
+```{r}
+manhattan_df |>
+  lm(price ~ stars + room_type, data = _) |>
+  broom::tidy() |>
+  knitr::kable(digits = 3)
+```
+
+
+bootstrap for better (?) inference. 
+
+```{r}
+manhattan_df |>
+  modelr::bootstrap(10) |>
+  mutate(
+    strap = map(strap, as_tibble), models = map(strap, \(df) lm(price ~ stars + room_type, data = df)), 
+    results = map(models, broom::tidy)
+  ) |>
+  select(.id, results) |>
+  unnest(results)
+``` 
 
 
