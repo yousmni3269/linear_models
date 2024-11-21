@@ -104,6 +104,19 @@ nyc_airbnb |>
 
 Most diagnostics use residuals. 
 
+
+With simple fit and residuals 
+
+```{r}
+simple_fit = lm(price ~ stars, data = nyc_airbnb)
+modelr::add_residuals(nyc_airbnb, simple_fit)
+# from the simple_fit, we get a slope and intercept using the linear model. If we calculate the estimated price using these coefficients, we can find a difference with the actual price. This difference is the residual. 
+
+modelr::add_predictions(nyc_airbnb, simple_fit)
+# the prediction gives an estimated price using the coefficients found from the linear model. 
+```
+
+
 ```{r}
 modelr::add_residuals(nyc_airbnb, fit) |>
   ggplot(aes(x = borough, y = resid)) + 
@@ -135,13 +148,14 @@ nyc_airbnb |>
 
 ## Hypothesis testing 
 
-for single coefficients, 
+for single coefficients, look at the table 
 
 ```{r}
 fit |>
   broom::tidy()
 ```
 
+when adding more than one coefficient, use "ANOVA"
 
 ```{r}
 fit_null = lm(price ~ stars + borough, data = nyc_airbnb)
@@ -160,7 +174,9 @@ fit_alt |>
 anova(fit_null, fit_alt) |>
   broom::tidy()
 
+#Because p-value is 0, the room_type makes a huge difference. 
 ```
+
 
 
 ## Do effects differ across boroughs 
@@ -172,7 +188,6 @@ nyc_airbnb |>
   lm(price ~ stars * borough + room_type * borough, data = _) |>
   broom::tidy()
 ```
-
 
 Could just fit separate models. 
 
@@ -190,7 +205,6 @@ nyc_airbnb |>
 
 
 Get fancy and use list columns. 
-
 
 ```{r}
 nyc_airbnb |>

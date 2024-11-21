@@ -209,13 +209,16 @@ bootstrap for better (?) inference.
 
 ```{r}
 manhattan_df |>
-  modelr::bootstrap(10) |>
+  modelr::bootstrap(1000) |>
   mutate(
     strap = map(strap, as_tibble), models = map(strap, \(df) lm(price ~ stars + room_type, data = df)), 
     results = map(models, broom::tidy)
   ) |>
   select(.id, results) |>
-  unnest(results)
+  unnest(results) |>
+  filter(term == "stars") |>
+  ggplot(aes(estimate)) +
+  geom_density()
 ``` 
 
 
